@@ -35,7 +35,7 @@
     <j:set var="m_label" value="${descriptor.publisherDescriptor.publisherLabelFieldNames}"/>
     <j:set var="m_retry" value="${descriptor.publisherDescriptor.retryFieldNames}"/>
     
-    <j:set var="helpUrl" value="${rootURL}/plugin/publish-over-cifs/help/config/"/>
+    <j:set var="helpUrl" value="/plugin/publish-over-cifs/help/config/"/>
     <j:set var="inPromotionSection" value='${descriptor.getClass().canonicalName.contains("CifsPromotionPublisherPlugin")}'/>
 
     <f:entry title='${inPromotionSection ? "" : "%publishers.section"}'>
@@ -75,10 +75,10 @@
                         </f:entry>
                         <f:optionalBlock title="${m_pub.retry()}" name="retry" checked="${publisher.retry != null}"  help="${helpUrl}retry.html">
                             <f:entry title="${m_retry.retries()}" help="${helpUrl}retries.html">
-                                <f:textbox name="retries" value="${publisher.retry.retries}" default="${defaults.retry.retries}" checkUrl="${descriptor.publisherDescriptor.getCheckUrl('retries')}"/>
+                                <f:textbox name="retries" value="${publisher.retry.retries}" default="${defaults.retry.retries}" checkUrl="${descriptor.publisherDescriptor.getCheckUrl('retries')}+'?value='+escape(this.value)"/>
                             </f:entry>
                             <f:entry title="${m_retry.retryDelay()}" help="${helpUrl}retryDelay.html">
-                                <f:textbox name="retryDelay" value="${publisher.retry.retryDelay}" default="${defaults.retry.retryDelay}" checkUrl="${descriptor.publisherDescriptor.getCheckUrl('retryDelay')}"/>
+                                <f:textbox name="retryDelay" value="${publisher.retry.retryDelay}" default="${defaults.retry.retryDelay}" checkUrl="${descriptor.publisherDescriptor.getCheckUrl('retryDelay')}+'?value='+escape(this.value)"/>
                             </f:entry>
                         </f:optionalBlock>
                         <f:optionalBlock title="${m_pub.label()}" name="label" checked="${publisher.label != null}"  help="${helpUrl}label.html">
@@ -93,7 +93,7 @@
                             <table width="100%" padding="0">
 
                                 <f:entry title="${m_trans.sourceFiles()}" help="${helpUrl}sourceFiles${promoHelpSuffix}.html">
-                                    <f:textbox name="sourceFiles" value="${transfer.sourceFiles}" checkUrl="${descriptor.publisherDescriptor.getCheckUrl('sourceFiles')}" default="${defaults.transfer.sourceFiles}"/>
+                                    <f:textbox name="sourceFiles" value="${transfer.sourceFiles}" checkUrl="${descriptor.publisherDescriptor.getCheckUrl('sourceFiles')}+'?value='+escape(this.value)" default="${defaults.transfer.sourceFiles}"/>
                                 </f:entry>
 
                                 <f:entry title="${m_trans.removePrefix()}" help="${helpUrl}removePrefix.html">
@@ -109,11 +109,22 @@
                                 </f:description>
 
                                 <f:advanced>
-                                    <j:if test="${descriptor.publisherDescriptor.canUseExcludes()}">
-                                        <f:entry title="${m_trans.excludes()}" help="${helpUrl}excludes.html">
-                                            <f:textbox name="excludes" value="${transfer.excludes}" default="${defaults.transfer.excludes}"/>
-                                        </f:entry>
-                                    </j:if>
+                                    <f:entry title="${m_trans.excludes()}" help="${helpUrl}excludes.html">
+                                        <f:textbox name="excludes" value="${transfer.excludes}" default="${defaults.transfer.excludes}"/>
+                                    </f:entry>
+
+                                    <f:entry title="${m_trans.patternSeparator()}" help="${helpUrl}patternSeparator.html">
+                                        <f:textbox name="patternSeparator" value="${transfer.patternSeparator}" default="${defaults.transfer.patternSeparator}"/>
+                                    </f:entry>
+
+                                    <f:entry title="${m_trans.noDefaultExcludes()}" help="${descriptor.publisherDescriptor.getHelpFile('noDefaultExcludes')}">
+                                        <f:checkbox name="noDefaultExcludes" value="${transfer.noDefaultExcludes}" default="${defaults.transfer.noDefaultExcludes}"/>
+                                    </f:entry>
+
+                                    <f:entry title="${m_trans.makeEmptyDirs()}" help="${helpUrl}makeEmptyDirs.html">
+                                        <f:checkbox name="makeEmptyDirs" checked="${transfer.makeEmptyDirs}" default="${defaults.transfer.makeEmptyDirs}"/>
+                                    </f:entry>
+
 
                                     <f:entry title="${m_trans.flatten()}" help="${helpUrl}flatten.html">
                                         <f:checkbox name="flatten" checked="${transfer.flatten}" default="${defaults.transfer.flatten}"/>

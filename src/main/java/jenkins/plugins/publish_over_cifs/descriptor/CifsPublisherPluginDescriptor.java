@@ -24,18 +24,18 @@
 
 package jenkins.plugins.publish_over_cifs.descriptor;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.Util;
 import hudson.model.AbstractProject;
-import hudson.model.Hudson;
 import hudson.model.TaskListener;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Publisher;
 import hudson.util.CopyOnWriteList;
 import hudson.util.FormValidation;
+import jenkins.model.Jenkins;
 import jenkins.plugins.publish_over.BPBuildInfo;
 import jenkins.plugins.publish_over.BPInstanceConfig;
 import jenkins.plugins.publish_over.BPPlugin;
-import jenkins.plugins.publish_over.BPTransfer;
 import jenkins.plugins.publish_over.BPValidators;
 import jenkins.plugins.publish_over.JenkinsCapabilities;
 import jenkins.plugins.publish_over_cifs.CifsHostConfiguration;
@@ -56,8 +56,10 @@ import java.util.List;
 public class CifsPublisherPluginDescriptor extends BuildStepDescriptor<Publisher> {
 
     /** null - prevent complaints from xstream */
+    @SuppressFBWarnings("URF_UNREAD_FIELD")
     private CifsPublisherPlugin.DescriptorMessages msg;
     /** null - prevent complaints from xstream */
+    @SuppressFBWarnings("URF_UNREAD_FIELD")
     private Class hostConfigClass;
     private final CopyOnWriteList<CifsHostConfiguration> hostConfigurations = new CopyOnWriteList<CifsHostConfiguration>();
     private CifsDefaults defaults;
@@ -94,6 +96,25 @@ public class CifsPublisherPluginDescriptor extends BuildStepDescriptor<Publisher
         return null;
     }
 
+    /**
+     * Adds the given CifsHostConfiguration to the current collection of host configurations.
+     * @param configuration The CifsHostConfiguration to add.
+     */
+    public void addHostConfiguration(final CifsHostConfiguration configuration) {
+        hostConfigurations.add(configuration);
+    }
+
+    /**
+     * Removes the host configuration with the given name from the current collection of host configurations.
+     * @param name The name of the host configuration to remove.
+     */
+    public void removeHostConfiguration(final String name) {
+        CifsHostConfiguration configuration = getConfiguration(name);
+        if (configuration != null) {
+            hostConfigurations.remove(configuration);
+        }
+    }
+
     public boolean configure(final StaplerRequest request, final JSONObject formData) {
         hostConfigurations.replaceBy(request.bindJSONToList(CifsHostConfiguration.class, formData.get("instance")));
         if (isEnableOverrideDefaults())
@@ -117,6 +138,9 @@ public class CifsPublisherPluginDescriptor extends BuildStepDescriptor<Publisher
     public FormValidation doCheckTimeout(@QueryParameter final String value) {
         return FormValidation.validateNonNegativeInteger(value);
     }
+    public FormValidation doCheckBufferSize(@QueryParameter final String value) {
+        return FormValidation.validatePositiveInteger(value);
+    }
     public FormValidation doCheckSourceFiles(@QueryParameter final String value) {
         return FormValidation.validateRequired(value);
     }
@@ -129,9 +153,6 @@ public class CifsPublisherPluginDescriptor extends BuildStepDescriptor<Publisher
     public FormValidation doCheckRetryDelay(@QueryParameter final String value) {
         return FormValidation.validatePositiveInteger(value);
     }
-    public boolean canUseExcludes() {
-        return BPTransfer.canUseExcludes();
-    }
     public String getDefaultMasterNodeName() {
         return BPInstanceConfig.DEFAULT_MASTER_NODE_NAME;
     }
@@ -143,9 +164,6 @@ public class CifsPublisherPluginDescriptor extends BuildStepDescriptor<Publisher
     }
     public CifsPublisherPluginDescriptor getPublisherDescriptor() {
         return this;
-    }
-    public CifsPluginDefaults.CifsPluginDefaultsDescriptor getPluginDefaultsDescriptor() {
-        return Hudson.getInstance().getDescriptorByType(CifsPluginDefaults.CifsPluginDefaultsDescriptor.class);
     }
 
     public jenkins.plugins.publish_over.view_defaults.manage_jenkins.Messages getCommonManageMessages() {
@@ -168,17 +186,22 @@ public class CifsPublisherPluginDescriptor extends BuildStepDescriptor<Publisher
     }
 
     protected BPBuildInfo createDummyBuildInfo(final StaplerRequest request) {
-        final BPBuildInfo buildInfo = new BPBuildInfo(
-            TaskListener.NULL,
-            "",
-            Hudson.getInstance().getRootPath(),
-            null,
-            null
-        );
-        final CifsNodeProperties defaults = request.bindParameters(CifsNodeProperties.class, CifsNodeProperties.FORM_PREFIX);
-        if (defaults != null && Util.fixEmptyAndTrim(defaults.getWinsServer()) != null)
-            buildInfo.put(CifsPublisher.CTX_KEY_WINS_SERVER, defaults.getWinsServer().trim());
-        return buildInfo;
+        Jenkins jenkins = Jenkins.getInstance();
+        if (jenkins != null) {
+            final BPBuildInfo buildInfo = new BPBuildInfo(
+                    TaskListener.NULL,
+                    "",
+                    jenkins.getRootPath(),
+                    null,
+                    null
+            );
+            final CifsNodeProperties defaults = request.bindParameters(CifsNodeProperties.class, CifsNodeProperties.FORM_PREFIX);
+            if (defaults != null && Util.fixEmptyAndTrim(defaults.getWinsServer()) != null)
+                buildInfo.put(CifsPublisher.CTX_KEY_WINS_SERVER, defaults.getWinsServer().trim());
+            return buildInfo;
+        } else {
+            return null;
+        }
     }
 
     public Object readResolve() {
